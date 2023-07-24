@@ -6,6 +6,10 @@ import earthpy.plot as ep
 import matplotlib.pyplot as plt
 from skimage import measure
 from skimage import filters
+import rasterio
+# from rasterio import plot
+
+# print(rasterio.__version__)
 
 
 def normalize(img):
@@ -95,22 +99,32 @@ def load_data(path='./data/'):
     Y_DICT_TRAIN = dict()
     X_DICT_VALIDATION = dict()
     Y_DICT_VALIDATION = dict()
-
-    print('Reading images')
+#     img_m = normalize(tiff.imread(
+#         path + 'mband/{}.tif'.format(img_id)).transpose([1, 2, 0]))
+#     mask = tiff.imread(
+#         path + 'gt_mband/{}.tif'.format(img_id)).transpose([1, 2, 0]) / 255
+#     # use 75% of image as train and 25% for validation
+#     train_xsz = int(3/4 * img_m.shape[0])
+#     X_DICT_TRAIN[img_id] = img_m[:train_xsz, :, :]
+#     Y_DICT_TRAIN[img_id] = mask[:train_xsz, :, :]
+#     X_DICT_VALIDATION[img_id] = img_m[train_xsz:, :, :]
+#     Y_DICT_VALIDATION[img_id] = mask[train_xsz:, :, :]
+#     # print(img_id + ' read')
+# print('Images are read')
+# return X_DICT_TRAIN, Y_DICT_TRAIN, X_DICT_VALIDATION, Y_DICT_VALIDATION
+    print('Reading images...')
     for img_id in trainIds:
-
-        img_m = normalize(tiff.imread(
-            path + 'mband/{}.tif'.format(img_id)).transpose([1, 2, 0]))
-        mask = tiff.imread(
-            path + 'gt_mband/{}.tif'.format(img_id)).transpose([1, 2, 0]) / 255
-        # use 75% of image as train and 25% for validation
+        with rasterio.open(path + 'mband/' + img_id + '.tif') as img_ds:
+            img_m = normalize(np.transpose(img_ds.read(), (1, 2, 0)))
+        with rasterio.open(path + 'gt_mband/{}.tif'.format(img_id)) as mask_ds:
+            mask = np.transpose(mask_ds.read(), (1, 2, 0)) / 255
+        # Use 75% if the image as training set and the rest for validation set
         train_xsz = int(3/4 * img_m.shape[0])
         X_DICT_TRAIN[img_id] = img_m[:train_xsz, :, :]
         Y_DICT_TRAIN[img_id] = mask[:train_xsz, :, :]
         X_DICT_VALIDATION[img_id] = img_m[train_xsz:, :, :]
         Y_DICT_VALIDATION[img_id] = mask[train_xsz:, :, :]
-        # print(img_id + ' read')
-    print('Images are read')
+    print('Images are read.')
     return X_DICT_TRAIN, Y_DICT_TRAIN, X_DICT_VALIDATION, Y_DICT_VALIDATION
 
 
