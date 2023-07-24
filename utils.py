@@ -2,8 +2,8 @@ import random
 import cv2
 import numpy as np
 import tifffile as tiff
-import earthpy.plot as ep
 import matplotlib.pyplot as plt
+import earthpy.plot as ep
 from skimage import measure
 from skimage import filters
 import rasterio
@@ -93,47 +93,54 @@ def load_data(path='./data/'):
     :return: X_DICT_TRAIN, Y_DICT_TRAIN, X_DICT_VALIDATION, Y_DICT_VALIDATION
     """
     trainIds = [str(i).zfill(2) for i in range(
-        1, 25)]  # all availiable ids: from "01" to "24"
+        1, 25)]  # all available ids: from "01" to "24"
 
     X_DICT_TRAIN = dict()
     Y_DICT_TRAIN = dict()
     X_DICT_VALIDATION = dict()
     Y_DICT_VALIDATION = dict()
-#     img_m = normalize(tiff.imread(
-#         path + 'mband/{}.tif'.format(img_id)).transpose([1, 2, 0]))
-#     mask = tiff.imread(
-#         path + 'gt_mband/{}.tif'.format(img_id)).transpose([1, 2, 0]) / 255
-#     # use 75% of image as train and 25% for validation
-#     train_xsz = int(3/4 * img_m.shape[0])
-#     X_DICT_TRAIN[img_id] = img_m[:train_xsz, :, :]
-#     Y_DICT_TRAIN[img_id] = mask[:train_xsz, :, :]
-#     X_DICT_VALIDATION[img_id] = img_m[train_xsz:, :, :]
-#     Y_DICT_VALIDATION[img_id] = mask[train_xsz:, :, :]
-#     # print(img_id + ' read')
-# print('Images are read')
-# return X_DICT_TRAIN, Y_DICT_TRAIN, X_DICT_VALIDATION, Y_DICT_VALIDATION
+
     print('Reading images...')
     for img_id in trainIds:
-        with rasterio.open(path + 'mband/' + img_id + '.tif') as img_ds:
-            img_m = normalize(np.transpose(img_ds.read(), (1, 2, 0)))
-        with rasterio.open(path + 'gt_mband/{}.tif'.format(img_id)) as mask_ds:
-            mask = np.transpose(mask_ds.read(), (1, 2, 0)) / 255
-        # Use 75% if the image as training set and the rest for validation set
-        train_xsz = int(3/4 * img_m.shape[0])
-        X_DICT_TRAIN[img_id] = img_m[:train_xsz, :, :]
-        Y_DICT_TRAIN[img_id] = mask[:train_xsz, :, :]
-        X_DICT_VALIDATION[img_id] = img_m[train_xsz:, :, :]
-        Y_DICT_VALIDATION[img_id] = mask[train_xsz:, :, :]
-    print('Images are read.')
+        try:
+            with rasterio.open(path + 'mband/' + img_id + '.tif') as img_ds:
+                img_m = normalize(np.transpose(img_ds.read(), (1, 2, 0)))
+            with rasterio.open(path + 'gt_mband/{}.tif'.format(img_id)) as mask_ds:
+                mask = np.transpose(mask_ds.read(), (1, 2, 0)) / 255
+            # Use 75% if the image as training set and the rest for the validation set
+            train_xsz = int(3/4 * img_m.shape[0])
+            X_DICT_TRAIN[img_id] = img_m[:train_xsz, :, :]
+            Y_DICT_TRAIN[img_id] = mask[:train_xsz, :, :]
+            X_DICT_VALIDATION[img_id] = img_m[train_xsz:, :, :]
+            Y_DICT_VALIDATION[img_id] = mask[train_xsz:, :, :]
+        except Exception as e:
+            print(f"Error occurred while processing image {img_id}: {e}")
+            # Set all dictionaries to None to indicate loading failure
+            X_DICT_TRAIN = None
+            Y_DICT_TRAIN = None
+            X_DICT_VALIDATION = None
+            Y_DICT_VALIDATION = None
+            break  # Exit the loop as loading has failed
+
+    if X_DICT_TRAIN is not None:
+        print('Images are read successfully.')
+    else:
+        print('Failed to read images.')
+
     return X_DICT_TRAIN, Y_DICT_TRAIN, X_DICT_VALIDATION, Y_DICT_VALIDATION
 
 
 def plot_train_data(X_DICT_TRAIN, Y_DICT_TRAIN, image_number=12):
-
     labels = ['Orginal Image with the 8 bands', 'Ground Truths: Buildings', 'Ground Truths: Roads & Tracks',
               'Ground Truths: Trees', 'Ground Truths: Crops', 'Ground Truths: Water']
 
     image_number = str(image_number).zfill(2)
+
+    # Check if the image_number exists in Y_DICT_TRAIN
+    if image_number not in Y_DICT_TRAIN:
+        print(f"Image {image_number} not found in the dataset.")
+        return
+
     number_of_GTbands = Y_DICT_TRAIN[image_number].shape[2]
     f, axarr = plt.subplots(1, number_of_GTbands + 1, figsize=(25, 25))
 
