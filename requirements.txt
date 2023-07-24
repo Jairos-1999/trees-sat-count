@@ -1,0 +1,11 @@
+geopandas
+matplotlib
+datetime
+IPython
+earthpy
+earthengine-api
+tifffile
+# skimage
+tensorflow
+scikit-learn
+scikit-image
